@@ -3,7 +3,24 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables:', {
+    url: !!supabaseUrl,
+    key: !!supabaseAnonKey
+  })
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: false
+  },
+  global: {
+    headers: {
+      'Access-Control-Allow-Origin': '*'
+    }
+  }
+})
 
 // 게임 기록 타입 정의
 export interface GameRecord {
@@ -19,6 +36,8 @@ export interface GameRecord {
 // 게임 기록 저장 함수
 export const saveGameRecord = async (record: Omit<GameRecord, 'id' | 'created_at'>) => {
   try {
+    console.log('Attempting to save game record:', record)
+    
     const { data, error } = await supabase
       .from('game_records')
       .insert([record])
@@ -26,9 +45,11 @@ export const saveGameRecord = async (record: Omit<GameRecord, 'id' | 'created_at
       .single()
 
     if (error) {
+      console.error('Supabase error:', error)
       throw error
     }
 
+    console.log('Game record saved successfully:', data)
     return data
   } catch (error) {
     console.error('Error saving game record:', error)
@@ -39,6 +60,8 @@ export const saveGameRecord = async (record: Omit<GameRecord, 'id' | 'created_at
 // 상위 기록 조회 함수 (게임 모드별, 점수 우선, 동점시 시간순)
 export const getTopRecords = async (gameMode?: string, limit: number = 10) => {
   try {
+    console.log('Attempting to fetch top records:', { gameMode, limit })
+    
     let query = supabase
       .from('game_records')
       .select('*')
@@ -54,9 +77,11 @@ export const getTopRecords = async (gameMode?: string, limit: number = 10) => {
       .limit(limit)
 
     if (error) {
+      console.error('Supabase error:', error)
       throw error
     }
 
+    console.log('Top records fetched successfully:', data?.length || 0, 'records')
     return data
   } catch (error) {
     console.error('Error fetching top records:', error)
