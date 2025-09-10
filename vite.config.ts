@@ -15,11 +15,11 @@ export default defineConfig(({ mode }) => {
       },
       server: {
         port: parseInt(process.env.PORT || '8080'),
-        host: '0.0.0.0'
+        host: 'localhost'
       },
       preview: {
         port: parseInt(process.env.PORT || '8080'),
-        host: '0.0.0.0'
+        host: 'localhost'
       }
     };
 });
