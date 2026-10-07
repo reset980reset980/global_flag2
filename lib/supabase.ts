@@ -3,14 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables:', {
-    url: !!supabaseUrl,
-    key: !!supabaseAnonKey
-  })
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: false
@@ -20,7 +13,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'Access-Control-Allow-Origin': '*'
     }
   }
-})
+}) : null
+
+const requireDatabase = () => {
+  if (!supabase) {
+    throw new Error('기록 저장 및 순위 조회 서비스를 사용할 수 없습니다. 관리자에게 문의해 주세요.')
+  }
+  return supabase
+}
 
 // 게임 기록 타입 정의
 export interface GameRecord {
@@ -38,7 +38,7 @@ export const saveGameRecord = async (record: Omit<GameRecord, 'id' | 'created_at
   try {
     console.log('Attempting to save game record:', record)
     
-    const { data, error } = await supabase
+    const { data, error } = await requireDatabase()
       .from('game_records')
       .insert([record])
       .select()
@@ -62,7 +62,7 @@ export const getTopRecords = async (gameMode?: string, limit: number = 10) => {
   try {
     console.log('Attempting to fetch top records:', { gameMode, limit })
     
-    let query = supabase
+    let query = requireDatabase()
       .from('game_records')
       .select('*')
 
